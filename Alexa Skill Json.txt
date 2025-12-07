@@ -1,0 +1,210 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "cumple gestor",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.YesIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NoIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "HelloWorldIntent",
+                    "slots": [],
+                    "samples": [
+                        "hola",
+                        "como estás",
+                        "di hola mundo",
+                        "di hola",
+                        "hola mundo"
+                    ]
+                },
+                {
+                    "name": "RegisterPersonIntent",
+                    "slots": [
+                        {
+                            "name": "birthdate",
+                            "type": "AMAZON.DATE"
+                        }
+                    ],
+                    "samples": [
+                        "registrar una persona",
+                        "registra una persona",
+                        "registrar persona",
+                        "quiero registrar una persona",
+                        "quiero registrar a alguien",
+                        "agregar persona",
+                        "fecha de nacimiento {birthdate}",
+                        "nació el {birthdate}",
+                        "su cumpleaños es el {birthdate}"
+                    ]
+                },
+                {
+                    "name": "ListPeopleIntent",
+                    "slots": [],
+                    "samples": [
+                        "lista mis personas",
+                        "listar personas",
+                        "quiénes están registrados",
+                        "dime mis personas registradas",
+                        "muéstrame mis personas"
+                    ]
+                },
+                {
+                    "name": "ShowPersonIntent",
+                    "slots": [
+                        {
+                            "name": "person_name",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "muéstrame información de {person_name}",
+                        "qué sabes de {person_name}",
+                        "detalles de {person_name}",
+                        "de {person_name}",
+                        "ver información de {person_name}"
+                    ]
+                },
+                {
+                    "name": "GenerateShoppingListIntent",
+                    "slots": [
+                        {
+                            "name": "person_name",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "genera la lista de compras para {person_name}",
+                        "lista de compras para {person_name}",
+                        "qué necesito para la fiesta de {person_name}",
+                        "prepara la lista para {person_name}"
+                    ]
+                },
+                {
+                    "name": "ContinuarRegistroPersonaIntent",
+                    "slots": [],
+                    "samples": [
+                        "continuar",
+                        "continuar registro",
+                        "siguiente pregunta",
+                        "sigue"
+                    ]
+                },
+                {
+                    "name": "ConfirmRegisterPersonIntent",
+                    "slots": [],
+                    "samples": [
+                        "confirma registro",
+                        "guardar información",
+                        "sí guarda",
+                        "no guardes",
+                        "cancelar registro"
+                    ]
+                },
+                {
+                    "name": "AnswerIntent",
+                    "slots": [
+                        {
+                            "name": "answer",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "es {answer}",
+                        "son {answer}",
+                        "se llama {answer}",
+                        "se llaman {answer}",
+                        "la respuesta es {answer}",
+                        "mi respuesta es {answer}",
+                        "le gusta {answer}",
+                        "le gustan {answer}",
+                        "su snack favorito es {answer}",
+                        "sus colores son {answer}",
+                        "su temática favorita es {answer}",
+                        "{answer} por favor",
+                        "solo {answer}",
+                        "es solamente {answer}",
+                        "{answer} nada más",
+                        "nació el {answer}",
+                        "decoracion estilo {answer}",
+                        "decoracion {answer}",
+                        "estilo {answer}"
+                    ]
+                },
+                {
+                    "name": "DecorStyleIntent",
+                    "slots": [
+                        {
+                            "name": "decor",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "decoración {decor}",
+                        "quiero decoración {decor}",
+                        "decoración estilo {decor}",
+                        "estilo de decoración {decor}",
+                        "es {decor}"
+                    ]
+                },
+                {
+                    "name": "MarkItemBoughtIntent",
+                    "slots": [
+                        {
+                            "name": "person_name",
+                            "type": "AMAZON.SearchQuery"
+                        },
+                        {
+                            "name": "item_name",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "marca {item_name} como comprado",
+                        "ya compré {item_name}",
+                        "anota {item_name} como comprado",
+                        "pon {item_name} como comprado"
+                    ]
+                },
+                {
+                    "name": "CloseShoppingListIntent",
+                    "slots": [
+                        {
+                            "name": "person_name",
+                            "type": "AMAZON.SearchQuery"
+                        }
+                    ],
+                    "samples": [
+                        "cierra la lista",
+                        "cierra la lista de {person_name}",
+                        "ya terminé la lista",
+                        "ya terminé la lista de {person_name}",
+                        "ya compré todo",
+                        "marca la lista como completada"
+                    ]
+                }
+            ],
+            "types": []
+        }
+    }
+}
