@@ -1,0 +1,377 @@
+//PRIMERO: C1
+
+@startuml C4_Context
+    !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+    title CumpleGestor - Diagrama de Contexto (C1)
+
+    Person(usuario, "Usuario", "Lector que gestiona su Gestion de cumpleaños por voz")
+
+    System(GestorCumpleSkill, "Gestor de Cumpleaños", "Skill de Alexa (ASK SDK, Python). Gestiona cumpleaños por venir, compras y regalos; diálogo multi-turno; caching.")
+    System_Ext(alexa, "Amazon Alexa / ASK Runtime", "Convierte voz a intents/peticiones JSON y reproduce respuestas")
+    System_Ext(lambda, "AWS Lambda", "Ejecución serverless del código del skill")
+    System_Ext(s3, "Amazon S3 / FakeS3", "Persistencia principal de atributos por usuario (S3Adapter o memoria)")
+   
+
+    Rel(usuario, alexa, "Habla comandos", "Voz")
+    Rel(alexa, bibliotecaSkill, "Intents / Requests (JSON)", "HTTPS/JSON")
+    Rel(bibliotecaSkill, alexa, "Respuestas (JSON)", "HTTPS/JSON")
+    Rel(alexa, usuario, "Respuestas habladas", "Audio")
+
+    Rel(bibliotecaSkill, lambda, "Se ejecuta en", "Runtime")
+    Rel(bibliotecaSkill, s3, "Lee/Escribe atributos de usuario", "S3Adapter / FakeS3")
+
+
+@enduml
+
+SEGUNDO: C2
+
+@startuml C4_Container
+    !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+    title Sistema CumpleGestor - Diagrama de Contenedores (C2)
+
+    Person(usuario, "Usuario", "Persona que gestiona cumpleaños y listas de compras mediante comandos de voz")
+
+    System_Boundary(alexa_platform, "Amazon Alexa Platform") {
+        Container(vui, "Voice User Interface", "Alexa Voice Service", "Procesa comandos de voz del usuario y sintetiza respuestas habladas")
+        Container(ask, "Alexa Skills Kit", "ASK Runtime", "Convierte voz a JSON, maneja intents, slots y sesiones para la skill CumpleGestor")
+    }
+
+    System_Boundary(aws_cloud, "AWS Cloud") {
+        Container(lambda_function, "CumpleGestor - Lambda", "Python 3.9 + ASK SDK", "Handlers de intents y lógica de negocio: registrar cumpleaños, generar listas, marcar artículos, recordatorios")
+        ContainerDb(persistence_store, "User Data Store", "Amazon S3", "Persistencia principal de datos de usuario: cumpleaños, listas de compras y estado de artículos")
+        Container(cache_mem, "In-Memory Cache", "Python dict (TTL)", "Caché temporal en memoria durante la sesión para acelerar respuestas de Alexa")
+    }
+
+    Rel(usuario, vui, "Comandos de voz", "Audio")
+    Rel(vui, ask, "Audio → intents", "Alexa Voice Service")
+    Rel(ask, lambda_function, "Request JSON (intents)", "HTTPS")
+    Rel(lambda_function, ask, "Response JSON", "HTTPS")
+    Rel(ask, vui, "Síntesis de voz", "Alexa Voice Service")
+    Rel(vui, usuario, "Respuestas habladas", "Audio")
+
+    Rel(lambda_function, persistence_store, "Lee/Escribe datos del usuario", "S3Adapter (buckets por userId)")
+    Rel(lambda_function, cache_mem, "Lecturas/Escrituras temporales (TTL)", "Memoria de proceso")
+
+@enduml
+
+TERCERO: C3
+
+@startuml C4_Component
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title CumpleGestor - Diagrama de Componentes (C3)
+
+'==============================
+'   FRONTEND – ALEXA
+'==============================
+Container(ask, "Alexa Skills Kit", "ASK Runtime", "Convierte voz a intents y slots y envía peticiones JSON a la función Lambda")
+
+'==============================
+'   LAMBDA FUNCTION – SKILL
+'==============================
+Container_Boundary(lambda_function, "Alexa Skill Lambda Function") {
+
+    ' ==== HANDLERS (Capa de Presentación) ====
+    Component(launch_handler, "LaunchRequestHandler", "Python Class", "Da la bienvenida y muestra el menú principal")
+    Component(register_handler, "RegisterPersonIntentHandler", "Python Class", "Inicia el flujo de registro de persona")
+    Component(continue_handler, "ContinuarRegistroPersonaHandler", "Python Class", "Controla el avance del registro y captura valores del usuario")
+    Component(confirm_handler, "ConfirmRegisterPersonHandler", "Python Class", "Confirma o cancela el guardado de la persona")
+    Component(list_handler, "ListPeopleHandler", "Python Class", "Lista todas las personas registradas")
+    Component(show_handler, "ShowPersonHandler", "Python Class", "Muestra información detallada de una persona")
+    Component(generate_list_handler, "GenerateShoppingListHandler", "Python Class", "Genera lista de compras a partir del tema y los gustos registrados")
+    Component(help_handler, "HelpIntentHandler", "Python Class", "Brinda ayuda contextual")
+    Component(stop_handler, "CancelOrStopIntentHandler", "Python Class", "Finaliza la sesión")
+    Component(fallback_handler, "FallbackIntentHandler", "Python Class", "Maneja frases fuera del dominio del sistema")
+    Component(sessionend_handler, "SessionEndedRequestHandler", "Python Class", "Cierra la sesión")
+    Component(error_handler, "CatchAllExceptionHandler", "Python Class", "Maneja cualquier excepción inesperada")
+
+    ' ==== SERVICIOS (Capa de Negocio – SOLID) ====
+    Component(reg_service, "PersonRegistrationService", "Python Class", "Lógica del flujo de registro: validaciones, parsing y estructura de datos")
+    Component(query_service, "PeopleQueryService", "Python Class", "Consulta personas registradas y obtiene detalles individuales")
+    Component(list_service, "ShoppingListService", "Python Class", "Genera la lista final combinando plantillas y reglas de personalización")
+    Component(theme_service, "ThemeNormalizationService", "Python Class", "Normaliza temas usando sinónimos definidos")
+    Component(rule_engine, "RuleEngineService", "Python Class", "Aplica reglas de ajuste: colores, snacks, música y decoración")
+
+    ' ==== MODELOS DE DOMINIO ====
+    Component(person_model, "Person", "Python Class", "Modelo de persona: id, nombre, fecha, tema, colores, snacks, música, decoración")
+    Component(birthday_model, "Birthday", "Python Class", "Modelo para manejar cumpleaños y fechas relevantes")
+
+    ' ==== REPOSITORIO Y PLANTILLAS ====
+    Component(repo_interface, "PeopleRepository", "Interface", "Abstracción del almacenamiento de datos del usuario")
+    Component(repo_s3, "S3PeopleRepository", "Python Class", "Implementa PeopleRepository usando Amazon S3 como backend")
+    Component(templates_provider, "TemplatesProvider", "Python Class", "Provee plantillas base por temática")
+}
+
+'==============================
+'   PERSISTENCIA EXTERNA
+'==============================
+ContainerDb(s3_store, "Amazon S3", "Cloud Storage", "Almacena people.json con toda la información registrada")
+
+'==============================
+'   RELACIONES
+'==============================
+
+' ASK → HANDLERS
+Rel(ask, register_handler, "RegisterPersonIntent", "JSON")
+Rel(ask, continue_handler, "AnswerIntent / ContinuarRegistroPersonaIntent", "JSON")
+Rel(ask, confirm_handler, "ConfirmRegisterPersonIntent / Yes/No", "JSON")
+Rel(ask, list_handler, "ListPeopleIntent", "JSON")
+Rel(ask, show_handler, "ShowPersonIntent", "JSON")
+Rel(ask, generate_list_handler, "GenerateShoppingListIntent", "JSON")
+Rel(ask, help_handler, "AMAZON.HelpIntent", "JSON")
+Rel(ask, stop_handler, "AMAZON.StopIntent / AMAZON.CancelIntent", "JSON")
+Rel(ask, fallback_handler, "AMAZON.FallbackIntent", "JSON")
+Rel(ask, launch_handler, "LaunchRequest", "JSON")
+
+' HANDLERS → SERVICIOS
+Rel(register_handler, reg_service, "iniciar/validar registro", "method call")
+Rel(continue_handler, reg_service, "procesar pasos del registro", "method call")
+Rel(confirm_handler, reg_service, "guardar o cancelar", "method call")
+
+Rel(list_handler, query_service, "listar personas", "method call")
+Rel(show_handler, query_service, "mostrar detalles", "method call")
+
+Rel(generate_list_handler, list_service, "generar lista personalizada", "method call")
+Rel(list_service, rule_engine, "aplicar reglas", "method call")
+Rel(list_service, templates_provider, "obtener plantilla por tema", "method call")
+
+Rel(reg_service, theme_service, "normalizar tema", "method call")
+
+' SERVICIOS → REPOSITORIO
+Rel(reg_service, repo_interface, "save_person()", "method call")
+Rel(query_service, repo_interface, "get_person() / get_all()", "method call")
+Rel(repo_interface, repo_s3, "implementación concreta", "binding")
+
+' REPOSITORIO → S3
+Rel(repo_s3, s3_store, "leer/escribir people.json", "S3 API")
+
+@enduml
+
+CUARTO: C4
+
+@startuml C4_Code
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+title CumpleGestor - Diagrama de Clases (C4)
+
+' =====================================================
+' ================== MODELOS DE DOMINIO ================
+' =====================================================
+
+class Person {
+    - name: str
+    - birthdate: str
+    - theme: Optional[str]
+    - colors: List[str]
+    - snacks: List[str]
+    - music: Optional[str]
+    - decor: Optional[str]
+    --
+    + to_dict(): Dict
+}
+
+class Birthday {
+    - name: str
+    - birthdate: str
+    --
+    + to_dict(): Dict
+}
+
+' *** NUEVOS MODELOS PARA LISTAS DE COMPRAS ***
+class Item {
+    - name: str
+    - quantity: float
+    - unit: str
+    - purchased: bool
+    --
+    + mark_purchased(): void
+    + mark_pending(): void
+}
+
+class ShoppingList {
+    - person_name: str
+    - theme: str
+    - items: List[Item]
+    --
+    + get_pending_items(): List[Item]
+    + mark_item(name: str): void
+}
+
+' =====================================================
+' ================== PLANTILLAS ========================
+' =====================================================
+
+class TemplatesProvider {
+    - BASE_TEMPLATES: Dict
+    - THEME_SYNONYMS: Dict
+    --
+    + normalize_theme(text: str): str
+    + get_template(theme: str): Dict
+}
+
+' =====================================================
+' ================== MOTOR DE REGLAS ===================
+' =====================================================
+
+class RuleEngine {
+    --
+    + apply_adjustment_rules(template: Dict, person: Person): Dict
+}
+
+' =====================================================
+' =================== PERSISTENCIA =====================
+' =====================================================
+
+class Storage {
+    --
+    + load_people(handler_input): Dict
+    + save_people(handler_input, people: Dict): void
+    + load_shopping_list(handler_input, person_name: str): Dict
+    + save_shopping_list(handler_input, person_name: str, data: Dict): void
+}
+
+' =====================================================
+' ==================== HANDLERS ========================
+' =====================================================
+
+class RegisterPersonIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class ContinuarRegistroPersonaHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class ConfirmRegisterPersonHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class ListPeopleHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class ShowPersonHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class GenerateShoppingListHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+' *** NUEVOS HANDLERS ***
+class MarkItemPurchasedIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class ListPendingItemsIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class HelpIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class LaunchRequestHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class CancelOrStopIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class FallbackIntentHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class SessionEndedRequestHandler {
+    + can_handle(handler_input): bool
+    + handle(handler_input): Response
+}
+
+class CatchAllExceptionHandler {
+    + can_handle(handler_input, exception): bool
+    + handle(handler_input, exception): Response
+}
+
+' =====================================================
+' ===================== SERVICIOS ======================
+' =====================================================
+
+class ShoppingListUpdateService {
+    --
+    + mark_item_as_purchased(person_name: str, item: str): void
+    + get_pending_items(person_name: str): List[Item]
+}
+
+' =====================================================
+' ===================== RELACIONES =====================
+' =====================================================
+
+' Handlers → Almacenamiento
+RegisterPersonIntentHandler --> Storage : load/save
+ContinuarRegistroPersonaHandler --> Storage : load/save
+ConfirmRegisterPersonHandler --> Storage : save_people()
+ListPeopleHandler --> Storage : load_people()
+ShowPersonHandler --> Storage : load_people()
+GenerateShoppingListHandler --> Storage : load_people()
+
+' Nuevos handlers → Storage
+MarkItemPurchasedIntentHandler --> Storage : load_shopping_list() / save_shopping_list()
+ListPendingItemsIntentHandler --> Storage : load_shopping_list()
+
+' Handlers → TemplatesProvider
+GenerateShoppingListHandler --> TemplatesProvider : get_template()
+ContinuarRegistroPersonaHandler --> TemplatesProvider : normalize_theme()
+
+' Handlers → RuleEngine
+GenerateShoppingListHandler --> RuleEngine : apply_adjustment_rules()
+
+' Handlers → Nuevo servicio de listas
+MarkItemPurchasedIntentHandler --> ShoppingListUpdateService : mark_item_as_purchased()
+ListPendingItemsIntentHandler --> ShoppingListUpdateService : get_pending_items()
+
+' Dominio
+Person --> Birthday : usa nacimiento
+GenerateShoppingListHandler --> Person : extrae info
+RuleEngine --> Person : usa atributos
+
+ShoppingList --> Item : contiene
+ShoppingListUpdateService --> ShoppingList : manipula lista
+ShoppingListUpdateService --> Item : actualiza estados
+
+note right of TemplatesProvider
+Gestiona plantillas base y sinónimos de temas.
+Aplicación del patrón Strategy para normalizar temáticas.
+end note
+
+note right of RuleEngine
+Aplica reglas de ajuste a la lista:
+colores, snacks, música y decoración.
+end note
+
+note right of Storage
+Envuelve la lectura/escritura en S3
+siguiendo Single Responsibility.
+end note
+
+note right of ShoppingListUpdateService
+Servicio dedicado a marcar artículos,
+obtener pendientes y actualizar estados.
+end note
+
+@enduml
+
